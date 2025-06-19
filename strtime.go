@@ -84,7 +84,7 @@ func Strftime(t time.Time, buf []byte, format string, nonzero bool) (int, error)
 	copy(fbuf, fbytes)
 
 	unix := t.Unix()
-	n := C.fmt_time(C.int64_t(unix), ptr(fbuf), ptr(buf), C.int64_t(len(buf)))
+	n := C.fmt_time(C.int64_t(unix), ptr(buf), C.int64_t(len(buf)), ptr(fbuf))
 	if n < 0 {
 		return 0, lut[-n]
 	}
