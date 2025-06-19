@@ -69,12 +69,15 @@ func Strptime(value, format string) (time.Time, error) {
 	return time.Unix(int64(res.value), 0), nil
 }
 
-/* Strftime writes bytes representing t in the specified format to buf and returns the number of non-null bytes written and an error. If nonzero is true, it returns a non-nil error when a write of 0 non-null bytes occurred or would occur. Note: on success, this function also writes a null byte to buf[n]. (The null byte is not included in the returned count.) If the len of the provided buf is less than the size needed to write the requested bytes (including the null byte), no bytes will be written. A result of 0 can be ambiguous: it can either indicate failure (no bytes were written) or success (the layout resulted in a string representation of len 0, but the terminating null byte was written). To disambiguate this, the nonzero parameter can be used to specify whether or not a 0 result is acceptable. If nonzero is true, Strftime will return a non-nil error whenever the result is 0. */
+/* Strftime writes bytes representing t in the specified format to buf and returns the number of non-null bytes written (n) and an error. On success, this function also writes a null byte to buf[n]. On failure, the contents of buf are undefined. Because some valid format specifiers can result in output strings of 0 bytes, a return value of 0 does not necessarily indicate an error. C's strftime function provides no means for disambiguating such cases from failure cases. To simplify error handling, if nonzero is true, Strftime will return a non-nil error whenever C's strfime returns or would return a value of 0. If nonzero is false, Strftime will only return a non-nil error if t is invalid. This function is not concurrency safe: buf must not be altered by another goroutine for the duration of the call. */
 func Strftime(t time.Time, buf []byte, format string, nonzero bool) (int, error) {
 	/* this is the only instance in which the potential cause of a zero
 	   result from fmt_time can be trivially determined */
-	if nonzero && len(buf) == 0 {
-		return 0, ErrBufLen
+	if len(buf) == 0 {
+		if nonzero {
+			return 0, ErrBufLen
+		}
+		return 0, nil
 	}
 	fbytes := []byte(format)
 	fbuf := make([]byte, len(fbytes)+1)
